@@ -13,7 +13,7 @@
 | [yolov3-tiny-prn](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolov3-tiny-prn.cfg) | 416x416   | gtx 1080Ti |float32 |    2.01 ms    |
 | [yolov3](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolov3.cfg)   | 608x608   | TX2 MAXN |float16 |    6 FPS    |
 | [yolov4](https://github.com/AlexeyAB/darknet/blob/master/cfg/yolov4.cfg)   | 416x416   | TX2 MAXN |float16 |    7 FPS    |
-1. Including pre-processing and post-processing time.
+Note that including pre-processing and post-processing time.
 
 ### Enviroments
 Jetson TX2

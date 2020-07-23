@@ -16,17 +16,19 @@
 1. Including pre-processing and post-processing time.
 
 ### Enviroments
-1. Jetson TX2
+Jetson TX2
 ```
 Ubuntu 18.04
 TensorRT 7.1.0
 CUDA 10.2
 cuDNN 8.0.0
-PyThon3 onnx=1.4.1
+onnx=1.4.1
+OpenCV 4.1.1
+CMake 3.10.2
 ```
 
 ### Models
-1. Add (infer_thresh) and (down_stride) to your .cfg.
+Add (infer_thresh) and (down_stride) to your .cfg.
 ```
 [yolo]  ## small anchor
 mask = 0,1,2
@@ -46,11 +48,10 @@ anchors = .....
 down_stride = 32
 infer_thresh = 0.5
 ```
-1. Convert darknet yolo to onnx. 
+Convert darknet yolo to onnx. 
 ```
 python3 tools/yolo_to_onnx.py --cfg model/yolov4.cfg --weights model/yolov4.weights --out model/yolov4.onnx
 ```
-
 
 ### Example
 ```bash

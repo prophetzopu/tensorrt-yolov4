@@ -149,7 +149,7 @@ int main(int argc, char** argv)
         }
     }
     std::cout<<"tensorrt-engine: "<< engine << std::endl
-             <<"camera-index: "<< camera_index << std::endl
+             <<"camera-index: "<< camera_index << std::endl;
 
     int cam_id = atoi(camera_index.data());
     video_detect(engine, cam_id);

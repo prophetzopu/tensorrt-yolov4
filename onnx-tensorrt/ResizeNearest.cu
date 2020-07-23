@@ -27,7 +27,7 @@
 // TODO: Move this to a common header
 inline bool is_CHW(nvinfer1::Dims const& dims) {
   return (dims.nbDims == 3 &&
-          dims.type[0] == nvinfer1::DimensionType::kCHANNEL &&
+          /* dims.type[0] == nvinfer1::DimensionType::kCHANNEL && */
           dims.type[1] == nvinfer1::DimensionType::kSPATIAL &&
           dims.type[2] == nvinfer1::DimensionType::kSPATIAL);
 }
@@ -44,12 +44,14 @@ nvinfer1::Dims ResizeNearestPlugin::getOutputDimensions(int index,
   output.nbDims = input.nbDims;
   int s = 0;
   for( int d=0; d<input.nbDims; ++d ) {
-    output.type[d] = input.type[d];
-    if( input.type[d] == nvinfer1::DimensionType::kSPATIAL ) {
-      output.d[d] = int(input.d[d] * _scale[s++]);
-    } else {
-      output.d[d] = input.d[d];
-    }
+    if (d == 0) {
+	  output.type[d] = nvinfer1::DimensionType::kCHANNEL;
+	  output.d[d] = input.d[d];
+	}
+    else {
+	  output.type[d] = input.type[d];
+	  output.d[d] = int(input.d[d] * _scale[s++]);
+	}
   }
   return output;
 }

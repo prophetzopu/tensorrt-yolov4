@@ -137,6 +137,7 @@ else()
       35
       53
       61
+      62
       70
       )
   # Add SM 75 for CUDA versions >= 10.0

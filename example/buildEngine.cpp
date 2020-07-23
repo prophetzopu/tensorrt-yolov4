@@ -8,7 +8,6 @@
 #include <string>
 int main(int argc, char* argv[])
 {
-
     int opt = 0,option_index = 0;
     static struct option opts[]={{"input-onnx",required_argument, nullptr,'i'},
                           {"output-engine",required_argument,nullptr,'o'},
@@ -20,7 +19,7 @@ int main(int argc, char* argv[])
     std::string onnx = "model/yolov4.onnx";
     std::string engine = "model/yolov4.engine";
     std::string calib = "";
-    yolodet::RUN_MODE mode = yolodet::RUN_MODE::FLOAT32;
+    yolodet::RUN_MODE mode = yolodet::RUN_MODE::FLOAT16;
     while((opt = getopt_long_only(argc,argv,"i:o:b:m:c:",opts,&option_index))!= -1)
     {
         switch (opt){

@@ -5,9 +5,9 @@
 * [Overall Test Coverage](#overall-test-coverage)
 # Node Test Coverage
 ## Summary
-Node tests have covered 106/113 (93.81%, 5 generators excluded) common operators.
+Node tests have covered 110/117 (94.02%, 5 generators excluded) common operators.
 
-Node tests have covered 2/12 (16.67%, 0 generators excluded) experimental operators.
+Node tests have covered 2/11 (18.18%, 0 generators excluded) experimental operators.
 
 * [Covered Common Operators](#covered-common-operators)
 * [No Cover Common Operators](#no-cover-common-operators)
@@ -27,7 +27,7 @@ node = onnx.helper.make_node(
     outputs=['y'],
 )
 x = np.random.randn(3, 4, 5).astype(np.float32)
-y = np.abs(x)
+y = abs(x)
 
 expect(node, inputs=[x], outputs=[y],
        name='test_abs')
@@ -721,7 +721,7 @@ expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_precomputed_stri
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 32, 32]
 pad_shape: [1, 1] -> [1, 0, 1, 0] by axis
 """
@@ -755,7 +755,7 @@ expect(node, inputs=[x], outputs=[y], name='test_averagepool_2d_same_lower')
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 32, 32]
 pad_shape: [1, 1] -> [0, 1, 0, 1] by axis
 """
@@ -910,21 +910,33 @@ test_cases = [
     ('FLOAT16', 'DOUBLE'),
     ('DOUBLE', 'FLOAT'),
     ('DOUBLE', 'FLOAT16'),
+    ('FLOAT', 'STRING'),
+    ('STRING', 'FLOAT'),
 ]
 
 for from_type, to_type in test_cases:
-    input = np.random.random_sample(shape).astype(
-        TENSOR_TYPE_TO_NP_TYPE[getattr(TensorProto, from_type)])
+    if 'STRING' != from_type:
+        input = np.random.random_sample(shape).astype(
+            TENSOR_TYPE_TO_NP_TYPE[getattr(TensorProto, from_type)])
+        if ('STRING' == to_type):
+            # Converting input to str, then give it np.object dtype for generating script
+            output = input.astype(np.dtype('str'))
+            output = output.astype(np.dtype(np.object))
+        else:
+            output = input.astype(TENSOR_TYPE_TO_NP_TYPE[getattr(TensorProto, to_type)])
+    else:
+        input = np.array([['0.47892547', '0.48033667', '0.49968487', '0.81910545'],
+           ['0.47031248', '0.816468', '0.21087195', '0.7229038'],
+           ['NaN', 'INF', '+INF', '-INF']], dtype=np.dtype(np.object))
+        output = input.astype(TENSOR_TYPE_TO_NP_TYPE[getattr(TensorProto, to_type)])
     node = onnx.helper.make_node(
         'Cast',
         inputs=['input'],
         outputs=['output'],
         to=getattr(TensorProto, to_type),
     )
-    output = input.astype(TENSOR_TYPE_TO_NP_TYPE[getattr(TensorProto, to_type)])
-
     expect(node, inputs=[input], outputs=[output],
-           name='test_cast_' + from_type + '_to_' + to_type)
+               name='test_cast_' + from_type + '_to_' + to_type)
 ```
 
 </details>
@@ -1172,57 +1184,44 @@ expect(node, inputs=[], outputs=[values],
 </details>
 
 
-### ConstantLike
-There are 3 test cases, listed as following:
+### ConstantOfShape
+There are 2 test cases, listed as following:
 <details>
-<summary>ones_with_input</summary>
+<summary>float_ones</summary>
 
 ```python
-shape = (4, 3, 2)
+x = np.array([4, 3, 2])
+tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.FLOAT,
+                                       [1], [1])
 node = onnx.helper.make_node(
-    'ConstantLike',
+    'ConstantOfShape',
     inputs=['x'],
     outputs=['y'],
-    value=1.0,
+    value=tensor_value,
 )
-x = np.random.randint(0, 100, size=shape, dtype=np.int32)
-y = np.ones(shape, dtype=np.int32)
-expect(node, inputs=[x], outputs=[y], name='test_constantlike_ones_with_input')
+
+y = np.ones(x, dtype=np.float32)
+expect(node, inputs=[x], outputs=[y],
+       name='test_constantofshape_float_ones')
 ```
 
 </details>
 <details>
-<summary>threes_with_shape_and_dtype</summary>
+<summary>int32_zeros</summary>
 
 ```python
-shape = (3, 4)
+x = np.array([10, 6])
+tensor_value = onnx.helper.make_tensor("value", onnx.TensorProto.INT32,
+                                       [1], [0])
 node = onnx.helper.make_node(
-    'ConstantLike',
-    shape=shape,
-    inputs=[],
+    'ConstantOfShape',
+    inputs=['x'],
     outputs=['y'],
-    value=3.0,
-    dtype=onnx.TensorProto.DOUBLE,  # 11: DOUBLE
+    value=tensor_value,
 )
-
-y = 3.0 * np.ones(shape, dtype=np.float64)
-expect(node, inputs=[], outputs=[y], name='test_constantlike_threes_with_shape_and_dtype')
-```
-
-</details>
-<details>
-<summary>zeros_without_input_dtype</summary>
-
-```python
-shape = (2, 5, 1)
-node = onnx.helper.make_node(
-    'ConstantLike',
-    inputs=[],
-    outputs=['y'],
-    shape=shape,
-)
-y = np.zeros(shape, dtype=np.float32)
-expect(node, inputs=[], outputs=[y], name='test_constantlike_zeros_without_input_dtype')
+y = np.zeros(x, dtype=np.int32)
+expect(node, inputs=[x], outputs=[y],
+       name='test_constantofshape_int_zeros')
 ```
 
 </details>
@@ -3092,7 +3091,7 @@ There are 12 test cases, listed as following:
 
 ```python
 """
-iutput_shape: [1, 3, 32]
+input_shape: [1, 3, 32]
 output_shape: [1, 3, 31]
 """
 node = onnx.helper.make_node(
@@ -3118,7 +3117,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_1d_default')
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 31, 31]
 """
 node = onnx.helper.make_node(
@@ -3144,7 +3143,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_default')
 
 ```python
 """
-iutput_shape: [1, 3, 28, 28]
+input_shape: [1, 3, 28, 28]
 output_shape: [1, 3, 30, 30]
 pad_shape: [4, 4] -> [2, 2, 2, 2] by axis
 """
@@ -3271,7 +3270,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_precomputed_strides'
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 32, 32]
 pad_shape: [1, 1] -> [1, 0, 1, 0] by axis
 """
@@ -3305,7 +3304,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_same_lower')
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 32, 32]
 pad_shape: [1, 1] -> [0, 1, 0, 1] by axis
 """
@@ -3339,7 +3338,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_same_upper')
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32]
+input_shape: [1, 3, 32, 32]
 output_shape: [1, 3, 10, 10]
 """
 node = onnx.helper.make_node(
@@ -3366,7 +3365,7 @@ expect(node, inputs=[x], outputs=[y], name='test_maxpool_2d_strides')
 
 ```python
 """
-iutput_shape: [1, 3, 32, 32, 32]
+input_shape: [1, 3, 32, 32, 32]
 output_shape: [1, 3, 31, 31, 31]
 """
 node = onnx.helper.make_node(
@@ -3658,6 +3657,27 @@ x = np.random.randn(3, 4, 5).astype(np.float32)
 y = np.negative(x)
 expect(node, inputs=[x], outputs=[y],
        name='test_neg')
+```
+
+</details>
+
+
+### NonZero
+There are 1 test cases, listed as following:
+<details>
+<summary>nonzero</summary>
+
+```python
+node = onnx.helper.make_node(
+    'NonZero',
+    inputs=['condition'],
+    outputs=['result'],
+)
+
+condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
+result = np.array((np.nonzero(condition)))  # expected output [[0, 1, 1], [0, 0, 1]]
+expect(node, inputs=[condition], outputs=[result],
+       name='test_nonzero_example')
 ```
 
 </details>
@@ -5130,9 +5150,9 @@ for test_name, shape in test_cases.items():
 
 
 ### Scan
-There are 1 test cases, listed as following:
+There are 2 test cases, listed as following:
 <details>
-<summary>scan</summary>
+<summary>scan_8</summary>
 
 ```python
 # Given an input sequence [x1, ..., xN], sum up its elements using a scan
@@ -5178,7 +5198,57 @@ y = np.array([9, 12]).astype(np.float32).reshape((1, 2))
 z = np.array([1, 2, 4, 6, 9, 12]).astype(np.float32).reshape((1, 3, 2))
 
 expect(node, inputs=[initial, x], outputs=[y, z],
-       name='test_scan_sum')
+       name='test_scan_sum', opset_imports=[onnx.helper.make_opsetid("", 8)])
+```
+
+</details>
+<details>
+<summary>scan_9</summary>
+
+```python
+# Given an input sequence [x1, ..., xN], sum up its elements using a scan
+# returning the final state (x1+x2+...+xN) as well the scan_output
+# [x1, x1+x2, ..., x1+x2+...+xN]
+#
+# create graph to represent scan body
+sum_in = onnx.helper.make_tensor_value_info('sum_in', onnx.TensorProto.FLOAT, [2])
+next = onnx.helper.make_tensor_value_info('next', onnx.TensorProto.FLOAT, [2])
+sum_out = onnx.helper.make_tensor_value_info('sum_out', onnx.TensorProto.FLOAT, [2])
+scan_out = onnx.helper.make_tensor_value_info('scan_out', onnx.TensorProto.FLOAT, [2])
+add_node = onnx.helper.make_node(
+    'Add',
+    inputs=['sum_in', 'next'],
+    outputs=['sum_out']
+)
+id_node = onnx.helper.make_node(
+    'Identity',
+    inputs=['sum_out'],
+    outputs=['scan_out']
+)
+scan_body = onnx.helper.make_graph(
+    [add_node, id_node],
+    'scan_body',
+    [sum_in, next],
+    [sum_out, scan_out]
+)
+# create scan op node
+node = onnx.helper.make_node(
+    'Scan',
+    inputs=['initial', 'x'],
+    outputs=['y', 'z'],
+    num_scan_inputs=1,
+    body=scan_body
+)
+# create inputs for sequence-length 3, inner dimension 2
+initial = np.array([0, 0]).astype(np.float32).reshape((2,))
+x = np.array([1, 2, 3, 4, 5, 6]).astype(np.float32).reshape((3, 2))
+# final state computed = [1 + 3 + 5, 2 + 4 + 6]
+y = np.array([9, 12]).astype(np.float32).reshape((2,))
+# scan-output computed
+z = np.array([1, 2, 4, 6, 9, 12]).astype(np.float32).reshape((3, 2))
+
+expect(node, inputs=[initial, x], outputs=[y, z],
+       name='test_scan9_sum', opset_imports=[onnx.helper.make_opsetid("", 9)])
 ```
 
 </details>
@@ -5309,6 +5379,45 @@ y = np.array(x.shape).astype(np.int64)
 
 expect(node, inputs=[x], outputs=[y],
        name='test_shape')
+```
+
+</details>
+
+
+### Shrink
+There are 2 test cases, listed as following:
+<details>
+<summary>hard_shrink</summary>
+
+```python
+node = onnx.helper.make_node(
+    'Shrink',
+    inputs=['x'],
+    outputs=['y'],
+    lambd=1.5,
+)
+X = np.arange(-2.0, 2.1, dtype=np.float32)
+Y = np.array([-2, 0, 0, 0, 2], dtype=np.float32)
+expect(node, inputs=[X], outputs=[Y],
+       name='test_shrink_hard')
+```
+
+</details>
+<details>
+<summary>soft_shrink</summary>
+
+```python
+node = onnx.helper.make_node(
+    'Shrink',
+    inputs=['x'],
+    outputs=['y'],
+    lambd=1.5,
+    bias=1.5,
+)
+X = np.arange(-2.0, 2.1, dtype=np.float32)
+Y = np.array([-0.5, 0, 0, 0, 0.5], dtype=np.float32)
+expect(node, inputs=[X], outputs=[Y],
+       name='test_shrink_soft')
 ```
 
 </details>
@@ -5969,6 +6078,192 @@ expect(node, inputs=[x], outputs=[y],
 </details>
 
 
+### TfIdfVectorizer
+There are 7 test cases, listed as following:
+<details>
+<summary>tf_batch_onlybigrams_skip0</summary>
+
+```python
+input = np.array([[1, 1, 3, 3, 3, 7], [8, 6, 7, 5, 6, 8]]).astype(np.int32)
+output = np.array([[0., 0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 1., 0., 1.]]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)   # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=2,
+    max_gram_length=2,
+    max_skip_count=0,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_batch_onlybigrams_skip0')
+```
+
+</details>
+<details>
+<summary>tf_batch_onlybigrams_skip5</summary>
+
+```python
+input = np.array([[1, 1, 3, 3, 3, 7], [8, 6, 7, 5, 6, 8]]).astype(np.int32)
+output = np.array([[0., 0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 1., 1., 1.]]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)   # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=2,
+    max_gram_length=2,
+    max_skip_count=5,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_batch_onlybigrams_skip5')
+```
+
+</details>
+<details>
+<summary>tf_batch_uniandbigrams_skip5</summary>
+
+```python
+input = np.array([[1, 1, 3, 3, 3, 7], [8, 6, 7, 5, 6, 8]]).astype(np.int32)
+output = np.array([[0., 3., 0., 0., 0., 0., 0.], [0., 0., 1., 0., 1., 1., 1.]]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)   # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=1,
+    max_gram_length=2,
+    max_skip_count=5,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_batch_uniandbigrams_skip5')
+```
+
+</details>
+<details>
+<summary>tf_only_bigrams_skip0</summary>
+
+```python
+input = np.array([1, 1, 3, 3, 3, 7, 8, 6, 7, 5, 6, 8]).astype(np.int32)
+output = np.array([0., 0., 0., 0., 1., 1., 1.]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)    # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=2,
+    max_gram_length=2,
+    max_skip_count=0,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_only_bigrams_skip0')
+```
+
+</details>
+<details>
+<summary>tf_onlybigrams_levelempty</summary>
+
+```python
+input = np.array([1, 1, 3, 3, 3, 7, 8, 6, 7, 5, 6, 8]).astype(np.int32)
+output = np.array([1., 1., 1.]).astype(np.float32)
+
+ngram_counts = np.array([0, 0]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2]).astype(np.int64)
+pool_int64s = np.array([    # unigrams none
+                       5, 6, 7, 8, 6, 7]).astype(np.int64)    # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=2,
+    max_gram_length=2,
+    max_skip_count=0,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_onlybigrams_levelempty')
+```
+
+</details>
+<details>
+<summary>tf_onlybigrams_skip5</summary>
+
+```python
+input = np.array([1, 1, 3, 3, 3, 7, 8, 6, 7, 5, 6, 8]).astype(np.int32)
+output = np.array([0., 0., 0., 0., 1., 3., 1.]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)    # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=2,
+    max_gram_length=2,
+    max_skip_count=5,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_onlybigrams_skip5')
+```
+
+</details>
+<details>
+<summary>tf_uniandbigrams_skip5</summary>
+
+```python
+input = np.array([1, 1, 3, 3, 3, 7, 8, 6, 7, 5, 6, 8]).astype(np.int32)
+output = np.array([0., 3., 1., 0., 1., 3., 1.]).astype(np.float32)
+
+ngram_counts = np.array([0, 4]).astype(np.int64)
+ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+pool_int64s = np.array([2, 3, 5, 4,    # unigrams
+                        5, 6, 7, 8, 6, 7]).astype(np.int64)    # bigrams
+
+helper = TfIdfVectorizerHelper(
+    mode='TF',
+    min_gram_length=1,
+    max_gram_length=2,
+    max_skip_count=5,
+    ngram_counts=ngram_counts,
+    ngram_indexes=ngram_indexes,
+    pool_int64s=pool_int64s
+)
+node = helper.make_node_noweights()
+expect(node, inputs=[input], outputs=[output], name='test_tfidfvectorizer_tf_uniandbigrams_skip5')
+```
+
+</details>
+
+
 ### Tile
 There are 2 test cases, listed as following:
 <details>
@@ -6157,6 +6452,29 @@ output = np.array([[[
 
 expect(node, inputs=[data, scales], outputs=[output],
        name='test_upsample_nearest')
+```
+
+</details>
+
+
+### Where
+There are 1 test cases, listed as following:
+<details>
+<summary>where</summary>
+
+```python
+node = onnx.helper.make_node(
+    'Where',
+    inputs=['condition', 'x', 'y'],
+    outputs=['z'],
+)
+
+condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
+x = np.array([[1, 2], [3, 4]], dtype=np.float32)
+y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+z = np.where(condition, x, y)  # expected output [[1, 8], [3, 4]]
+expect(node, inputs=[condition, x, y], outputs=[z],
+       name='test_where_example')
 ```
 
 </details>
@@ -6456,9 +6774,6 @@ expect(node, inputs=[x], outputs=[y],
 ### Affine (call for test cases)
 
 
-### ConstantFill (call for test cases)
-
-
 ### Crop (call for test cases)
 
 
@@ -6552,11 +6867,10 @@ pads: 1
 strides: 1
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 1
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -6629,11 +6943,10 @@ pads: 2
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 1
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -6706,11 +7019,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 1
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -6783,11 +7095,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 2
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -6860,11 +7171,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 2
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -6942,11 +7252,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 2
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -7024,11 +7333,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 2
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>
@@ -7106,11 +7414,10 @@ pads: 3
 strides: 2
 </details>
 <details>
-<summary>BatchNormalization: 1 out of 3 attributes covered</summary>
+<summary>BatchNormalization: 1 out of 2 attributes covered</summary>
 
 epsilon: 2
 momentum: 0
-spatial: 0
 </details>
 <details>
 <summary>Concat: 1 out of 1 attributes covered</summary>

@@ -12,8 +12,11 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS})
 
 message(STATUS ${OpenCV_LIBS})
-add_executable(buildEngine  buildEngine.cpp )
+add_executable(buildEngine  buildEngine.cpp)
 target_link_libraries(buildEngine trt ${OpenCV_LIBS})
 
-add_executable(runDet runDet.cpp )
+add_executable(runDet runDet.cpp)
 target_link_libraries(runDet trt ${OpenCV_LIBS})
+
+add_executable(videoDet  videoDet.cpp)
+target_link_libraries(videoDet trt ${OpenCV_LIBS})

@@ -77,7 +77,8 @@ REGISTER_BUILTIN_PLUGIN("FancyActivation",       FancyActivationPlugin);
 REGISTER_BUILTIN_PLUGIN("ResizeNearest",         ResizeNearestPlugin);
 REGISTER_BUILTIN_PLUGIN("Split"        ,         SplitPlugin);
 REGISTER_BUILTIN_PLUGIN("InstanceNormalization", InstanceNormalizationPlugin);
-REGISTER_BUILTIN_NVPLUGIN("Concat", ConcatPlugin);
+// application doesn't need ConcatPlugin anymore since new version of TensorRT came out.
+// REGISTER_BUILTIN_NVPLUGIN("Concat", ConcatPlugin);
 REGISTER_BUILTIN_PLUGIN("DCNv2", DCNv2Plugin);
 REGISTER_BUILTIN_PLUGIN("Mish", MishPlugin);
 REGISTER_BUILTIN_PLUGIN("YOLO", YOLOPlugin);

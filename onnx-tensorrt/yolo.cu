@@ -95,7 +95,7 @@ YOLOPlugin::~YOLOPlugin() {
 }
 inline bool is_CHW(nvinfer1::Dims const& dims) {
     return (dims.nbDims == 3 &&
-            /* dims.type[0] == nvinfer1::DimensionType::kCHANNEL && */
+            dims.type[0] == nvinfer1::DimensionType::kCHANNEL &&
             dims.type[1] == nvinfer1::DimensionType::kSPATIAL &&
             dims.type[2] == nvinfer1::DimensionType::kSPATIAL);
 }
@@ -105,7 +105,7 @@ nvinfer1::Dims YOLOPlugin::getOutputDimensions(int index, const nvinfer1::Dims *
     assert(nbInputs == 1);
     assert(index == 0);
     nvinfer1::Dims const& input = inputDims[0];
-    assert(is_CHW(input));
+    assert(input.nbDims == 3);
     nvinfer1::Dims output;
     output.nbDims = input.nbDims;
     for( int d=0; d<input.nbDims; ++d ) {

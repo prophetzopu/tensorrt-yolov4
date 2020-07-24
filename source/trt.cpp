@@ -172,7 +172,9 @@ namespace yolodet{
         }
         mCudaBuffers[1] = safeCudaMalloc(mBindBufferSizes[1]);
         for (int i = 2; i < nbBindings; ++i) mCudaBuffers[i]=mCudaBuffers[1];
-        mCudaImg =  safeCudaMalloc(4096*4096*3* sizeof(uchar)); // max input image shape
+		// max input image shape
+        // mCudaImg = safeCudaMalloc(4096*4096*3*sizeof(uchar));
+		mCudaImg = safeCudaMalloc(2024*2048*3*sizeof(uchar));
         CUDA_CHECK(cudaStreamCreate(&mCudaStream));
         inputDim = mEngine->getBindingDimensions(0);
         return 1;

@@ -81,7 +81,7 @@ iou_thresh=0.213
 ...
 ```
 
--Convert darknet yolo to onnx. 
+- Convert darknet yolo to onnx. 
 ```
 python3 tools/yolo_to_onnx.py --cfg model/yolov4.cfg --weights model/yolov4.weights --out model/yolov4.onnx
 ```
@@ -93,11 +93,13 @@ cd tensorrt-yolov4
 mkdir build
 cd build && cmake .. && make
 cd ..
+
 ## YOLOv3
 ./buildEngine -i model/yolov3.onnx -o model/yolov3.engine -b 1 -m 0
 ./runDet -i model/yolov3.engine -p dog.jpg -v nuscenes_mini.mp4
 ### use web camera.
 ./videoDet -t model/yolov3.engine -c 1
+
 ## YOLOv4
 ./buildEngine -i model/yolov4.onnx -o model/yolov4.engine -b 1 -m 0
 ./runDet -i model/yolov4.engine -p dog.jpg -v nuscenes_mini.mp4

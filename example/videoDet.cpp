@@ -89,17 +89,13 @@ void draw_outputs(cv::Mat& image, float* outputs, int num_detections)
         cv::Size size = cv::getTextSize(text, fontFace, fontScale, thick / 2, &baseline);
         cv::Rect rect_t(xt, yt - (size.height + 8), size.width + 4, size.height + 8);
         cv::rectangle(image, rect_t, color, -1);
-        cv::putText(image, text, cv::Point(xt, yt - 5), fontFace, fontScale, cv::Scalar(255, 255, 255), thick / 2);
+        cv::putText(image, text, cv::Point(xt, yt - 5), fontFace, fontScale, 
+			cv::Scalar(255, 255, 255), thick / 2);
     }
 }
 
-void video_detect(std::string engine, int cam_id)
+void yolo_detect(std::string engine, cv::VideoCapture& capture)
 {
-    cv::VideoCapture capture(cam_id);
-	capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-	capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-    capture.set(cv::CAP_PROP_FPS, 30);
-
     yolodet::yoloNet net(engine);
     std::unique_ptr<float[]> outputData(new float[net.mBindBufferSizes[1]]);
     cv::Mat frame;
@@ -115,44 +111,70 @@ void video_detect(std::string engine, int cam_id)
         auto stop_time = std::chrono::system_clock::now();
 
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time);
-        float duration_sec = float(duration.count()) * std::chrono::microseconds::period::num / std::chrono::microseconds::period::den;
+        float duration_sec = float(duration.count()) * std::chrono::microseconds::period::num / 
+            std::chrono::microseconds::period::den;
         float FPS = 1.F / duration_sec;
 
         char buf[20] = {0};
         sprintf(buf, "FPS: %d", int(FPS));
         int fontFace = cv::FONT_HERSHEY_SIMPLEX;
         double fontScale = 0.5;
-        cv::putText(frame, std::string(buf), cv::Point(20, 30), fontFace, fontScale, cv::Scalar(255, 255, 255), 2);
-		
+        cv::putText(frame, std::string(buf), cv::Point(20, 30), fontFace, fontScale, 
+            cv::Scalar(255, 255, 255), 2);
+
         cv::imshow("video", frame);
         if (char(cv::waitKey(1)) == 'q') break;
     }
 }
 
+void camera_detect(std::string engine, int cam_id)
+{
+    cv::VideoCapture capture(cam_id);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+    capture.set(cv::CAP_PROP_FPS, 30);
+    yolo_detect(engine, capture);
+}
+
+void video_detect(std::string engine, std::string video_file)
+{
+    cv::VideoCapture capture(video_file);
+    capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+    capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+    capture.set(cv::CAP_PROP_FPS, 30);
+    yolo_detect(engine, capture);
+}
+
 int main(int argc, char** argv)
 {
-	int opt = 0,option_index = 0;
-    static struct option opts[]={{"tensorrt-engine",required_argument, nullptr,'t'},
+    int opt = 0,option_index = 0;
+    static struct option opts[]={{"engine",required_argument, nullptr,'e'},
                                  {"camera-index",required_argument,nullptr,'c'},
+                                 {"video-file",required_argument,nullptr,'v'},
                                  {0,0,0,0}};
-	std::string engine = "model/yolov4.engine";
-    std::string camera_index = "1";
-    while((opt = getopt_long_only(argc,argv,"t:c:",opts,&option_index))!= -1)
+    std::string engine = "model/yolov4.engine";
+    std::string camera_index = "-1";
+    std::string video_file = "nuscenes_mini.mp4";
+    while((opt = getopt_long_only(argc,argv,"e:c:v:",opts,&option_index))!= -1)
     {
         switch (opt){
-            case 't': engine = std::string(optarg);
+            case 'e': engine = std::string(optarg);
                 break;
             case 'c': camera_index = std::string(optarg);
+                break;
+            case 'v': video_file = std::string(optarg);
                 break;
             default:
                 break;
         }
     }
-    std::cout<<"tensorrt-engine: "<< engine << std::endl
-             <<"camera-index: "<< camera_index << std::endl;
+    std::cout<<"engine: "<< engine << std::endl
+             <<"camera-index: "<< camera_index << std::endl
+             <<"video-file: "<< video_file << std::endl;
 
     int cam_id = atoi(camera_index.data());
-    video_detect(engine, cam_id);
+    if (cam_id == -1) video_detect(engine, video_file);
+    else camera_detect(engine, cam_id);
 
     return 0;
 }

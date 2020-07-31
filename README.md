@@ -39,7 +39,7 @@ height=416
 
 [yolo]
 mask = 0,1,2
-anchors = 12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401
+anchors = ...
 down_stride = 8
 classes=80
 infer_thresh = 0.25
@@ -53,7 +53,7 @@ iou_thresh=0.213
 
 [yolo]
 mask = 3,4,5
-anchors = 12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401
+anchors = ...
 down_stride = 16
 infer_thresh = 0.25
 classes=80
@@ -67,7 +67,7 @@ iou_thresh=0.213
 
 [yolo]
 mask = 6,7,8
-anchors = 12, 16, 19, 36, 40, 28, 36, 75, 76, 55, 72, 146, 142, 110, 192, 243, 459, 401
+anchors = ...
 classes=80
 down_stride = 32
 infer_thresh = 0.25
@@ -104,7 +104,7 @@ cd ..
 ./buildEngine -i model/yolov4.onnx -o model/yolov4.engine -b 1 -m 0
 ./runDet -i model/yolov4.engine -p dog.jpg -v nuscenes_mini.mp4
 ### use web camera.
-./videoDet -t model/yolov4.engine -c 1
+./videoDet -e model/yolov4.engine -c 1
 ```
 
 ### Related projects
